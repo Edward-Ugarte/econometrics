@@ -1,0 +1,155 @@
+# === Preparación de datos ===
+clear  # Limpia cualquier conjunto de datos previo
+nulldata 1000  # Crea 1000 observaciones en Gretl
+
+# === Generación de ingresos simulados ===
+scalar media_ingreso = 1750  # Media esperada de ingresos
+scalar desvio_ingreso = 500  # Variabilidad esperada
+
+series ingresos_sim = normal(media_ingreso, desvio_ingreso)  # Simulación de ingresos
+
+# === Cálculo de tamaño muestral con error proporcional ===
+scalar Z = 1.96    # Nivel de confianza del 95%
+scalar media_sim = mean(ingresos_sim)
+scalar E = 0.05 * media_sim  # Margen de error dinámico (5% de la media)
+scalar sigma_sim = sd(ingresos_sim)  # Desviación estándar real
+
+# Tamaño muestral sin corrección
+scalar n_simple = (Z^2 * sigma_sim^2) / (E^2)
+
+# Tamaño muestral con corrección por población finita
+scalar N_real = 1000  # Población ajustada
+scalar n_ajustado = n_simple / (1 + (n_simple / N_real))
+
+# === Cálculo de intervalos de confianza ===
+scalar n = floor(n_ajustado)  # Tamaño muestral final ajustado
+scalar x = mean(ingresos_sim)  # Media de la muestra generada
+scalar s = sd(ingresos_sim)  # Desviación estándar de la muestra
+
+# --- Intervalo SIN corrección por población finita ---
+scalar E_sin = Z * (s / sqrt(n))
+scalar inf_sin = x - E_sin
+scalar sup_sin = x + E_sin
+
+# --- Intervalo CON corrección por población finita ---
+scalar f = n / N_real
+scalar E_con = E_sin * sqrt(1 - f)
+scalar inf_con = x - E_con
+scalar sup_con = x + E_con
+
+# === Cálculo de límites poblacionales ===
+scalar inf_pobl_sin = x - E_sin
+scalar sup_pobl_sin = x + E_sin
+
+scalar inf_pobl_con = x - E_con
+scalar sup_pobl_con = x + E_con
+
+# === Prueba de hipótesis para la media ===
+scalar mu_0 = 1700  # Valor poblacional de referencia
+scalar Z_obs = (x - mu_0) / (s / sqrt(n))
+scalar Z_critico = Z
+
+# === Mostrar resultados ===
+printf "\n📊 Tamaño muestral y error proporcional\n"
+printf "Margen de error dinámico (5%% de la media): %.2f\n", E
+printf "Tamaño muestral sin corrección: %.2f\n", n_simple
+printf "Tamaño muestral con corrección finita: %.2f\n", n
+
+printf "\n➡ Intervalos de confianza:\n"
+printf "Sin corrección: [%.2f, %.2f]\n", inf_sin, sup_sin
+printf "Con corrección: [%.2f, %.2f]\n", inf_con, sup_con
+
+printf "\n✅ Límites poblacionales estimados:\n"
+printf "Sin corrección: [%.2f, %.2f]\n", inf_pobl_sin, sup_pobl_sin
+printf "Con corrección: [%.2f, %.2f]\n", inf_pobl_con, sup_pobl_con
+
+printf "\n📌 Prueba de hipótesis para la media poblacional\n"
+printf "H0: Media poblacional = %.2f\n", mu_0
+printf "Media muestral: %.2f\n", x
+printf "Estadístico de prueba Z: %.2f\n", Z_obs
+printf "Valor crítico: ±%.2f\n", Z_critico
+
+if abs(Z_obs) > Z_critico
+    printf "\n🚀 Se **rechaza** la hipótesis nula (H0). La media es significativamente diferente.\n"
+else
+    printf "\n✅ No hay suficiente evidencia para rechazar H0. La media podría ser %.2f.\n", mu_0
+endif
+series X1 = normal(0, 1)  # Ejemplo de regresora
+series X2 = uniform(0, 10)
+series X3 = normal(5, 2)
+# Transformar ingresos en categorías discretas para Poisson
+series ingresos_cat = ceil(ingresos_sim / 500)  # Agrupamos en intervalos de 500
+
+# Aplicar regresión de Poisson
+poisson ingresos_cat const X1 X2 X3
+# Configuración sin borrar datos
+set verbose off
+
+# Aplicar regresión de Poisson sin transformación adicional
+poisson ingresos_cat const X1 X2 X3
+nulldata 1000
+set verbose off
+
+# === Paso 2: Generación de ingresos simulados ===
+series ingresos_sim = normal(1750, 500)
+series ingresos_cat = ceil(ingresos_sim / 500)  # Agrupar ingresos en categorías discretas
+
+# Definir estadísticas clave
+scalar media_ingreso = mean(ingresos_sim)
+scalar desvio_ingreso = sd(ingresos_sim)
+scalar sigma2 = desvio_ingreso^2
+
+# Definir regresoras
+series X1 = normal(0, 1)
+series X2 = uniform(0, 10)
+series X3 = normal(5, 2)
+
+# === Paso 3: Muestreo Bayesiano con Gibbs Sampling ===
+scalar beta0 = media_ingreso + mean(normal(0, sqrt(sigma2)))
+scalar beta1 = mean(normal(0, 1))
+scalar beta2 = mean(normal(0, 1))
+scalar beta3 = mean(normal(0, 1))
+
+matrix beta0_iter = zeros(1000, 1)
+matrix beta1_iter = zeros(1000, 1)
+matrix beta2_iter = zeros(1000, 1)
+matrix beta3_iter = zeros(1000, 1)
+
+loop i=1..1000
+    scalar epsilon = mean(normal(0, sqrt(sigma2)))
+    scalar ingresos_pred = beta0 + beta1 * mean(X1) + beta2 * mean(X2) + beta3 * mean(X3) + epsilon
+    beta0 = mean(normal(mean(ingresos_pred), sqrt(sigma2)))
+    beta1 = mean(normal(mean(X1), sqrt(sigma2)))
+    beta2 = mean(normal(mean(X2), sqrt(sigma2)))
+    beta3 = mean(normal(mean(X3), sqrt(sigma2)))
+    
+    beta0_iter[i, 1] = beta0
+    beta1_iter[i, 1] = beta1
+    beta2_iter[i, 1] = beta2
+    beta3_iter[i, 1] = beta3
+endloop
+
+# === Paso 4: Transformación a series para visualización ===
+series beta0_series = beta0_iter[,1]
+series beta1_series = beta1_iter[,1]
+series beta2_series = beta2_iter[,1]
+series beta3_series = beta3_iter[,1]
+
+# === Paso 5: Construcción del cuadro de resultados Bayesianos ===
+printf "\n📊 **Estimaciones finales Bayesianas:**\n"
+printf "Variable dependiente: ingresos_cat\n"
+printf "Desviaciones típicas basadas en muestreo Gibbs\n"
+printf "-----------------------------------------------------------\n"
+printf "             Coeficiente   Desv. típica\n"
+printf "-----------------------------------------------------------\n"
+printf "  Const      %.5f       %.5f\n", mean(beta0_series), sd(beta0_series)
+printf "  X1         %.5f       %.5f\n", mean(beta1_series), sd(beta1_series)
+printf "  X2         %.5f       %.5f\n", mean(beta2_series), sd(beta2_series)
+printf "  X3         %.5f       %.5f\n", mean(beta3_series), sd(beta3_series)
+printf "-----------------------------------------------------------\n\n"
+
+# Mostrar estadísticas adicionales
+printf "📌 **Estadísticas del ajuste Bayesiano:**\n"
+printf "Media de la vble. dep.   %.5f\n", mean(ingresos_cat)
+printf "D.T. de la vble. dep.    %.5f\n", sd(ingresos_cat)
+printf "Criterio de Akaike       %.5f\n", 2 * (mean(beta0_series) + mean(beta1_series) + mean(beta2_series) + mean(beta3_series))
