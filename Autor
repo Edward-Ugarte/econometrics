@@ -1,0 +1,29 @@
+Autor: Edward Ugarte
+Economista especializado en modelado estadístico, inferencia bayesiana y escritura de scripts econométricos en entornos de código abierto.
+Descripción del paquete
+Este paquete integra regresión de Poisson y muestreo de Gibbs bayesiano, proporcionando una inferencia estadística robusta para modelos de conteo discreto. Diseñado para su uso en Gretl, permite la estimación del tamaño de muestra, el análisis de intervalos y la cuantificación de la incertidumbre en los parámetros dentro de estudios econométricos.
+Por qué se utilizaron los métodos de Poisson y Bayesianos
+La regresión de Poisson se usa comúnmente cuando la variable dependiente consiste en datos de conteo, como categorías de ingresos. Supone que la media y la varianza de la variable dependiente son iguales, lo cual es característico de la distribución de Poisson.
+El muestreo de Gibbs bayesiano complementa la regresión de Poisson al incorporar la incertidumbre en los parámetros dentro del modelo, permitiendo un enfoque probabilístico en lugar de depender de una única estimación puntual. Al iterar sobre distribuciones posteriores, el muestreo de Gibbs refina las estimaciones de los parámetros, lo que resulta útil cuando los tamaños de muestra son pequeños o la información previa es valiosa.
+Características clave
+- Modelado de regresión de Poisson para variables dependientes discretas.
+- Marco de muestreo de Gibbs bayesiano para la cuantificación de la incertidumbre en los parámetros.
+- Cálculo optimizado del tamaño de muestra, considerando correcciones para poblaciones finitas.
+- Estimación de intervalos y pruebas de hipótesis integradas dentro de Gretl.
+- Estructura modular para adaptabilidad y facilidad de uso en diversos análisis econométricos.
+Advertencias al usar regresión de Poisson
+- Sobredispersión: La regresión de Poisson supone que la media y la varianza de la variable dependiente son iguales. Si la varianza es significativamente mayor, un modelo binomial negativo puede ser más adecuado.
+- Alta prevalencia de ceros: Si la variable dependiente contiene un número excesivo de ceros, puede ser necesario un modelo de Poisson con inflación de ceros.
+- Colinealidad entre predictores: Correlaciones fuertes entre las variables independientes pueden generar estimaciones de coeficientes poco confiables.
+Advertencias al usar métodos bayesianos
+- Elección de priors: Priors mal elegidos pueden sesgar los resultados o ralentizar la convergencia en el muestreo de Gibbs. Las distribuciones previas deben reflejar suposiciones razonables basadas en el conocimiento del dominio.
+- Convergencia lenta en muestreo de Gibbs: Si las cadenas son altamente dependientes, la convergencia puede ser lenta, requiriendo diagnósticos como gráficos de trazado para verificar la estabilidad.
+- Sensibilidad en muestras pequeñas: Los métodos bayesianos, especialmente el muestreo de Gibbs, dependen de actualizaciones iterativas. Cuando los tamaños de muestra son pequeños, los resultados pueden depender fuertemente de la elección de los priors.
+Compatibilidad
+- Probado en Gretl versión 2025b con resultados estables en simulaciones de Monte Carlo.
+- Diseñado para integrarse dentro del entorno econométrico de Gretl, asegurando una ejecución fluida de modelos de Poisson y bayesianos.
+Antecedentes del autor
+Edward Ugarte se especializa en simulaciones de Monte Carlo, correcciones para poblaciones finitas y modelado econométrico. Su trabajo se centra en desarrollar herramientas econométricas de código abierto y accesibles, mejorando la eficiencia de las estimaciones estadísticas en entornos de investigación.
+Instalación
+- Importa el paquete en Gretl.
+- Ejecuta los scripts según las instrucciones de uso.
