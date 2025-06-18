@@ -1,0 +1,166 @@
+? clear  # Limpia cualquier conjunto de datos previo
+? nulldata 1000  # Crea 1000 observaciones en Gretl
+periodicidad: 1, máx. obs: 1000
+rango de observaciones: 1 a 1000
+# === Generación de ingresos simulados ===
+? scalar media_ingreso = 1750  # Media esperada de ingresos
+Se ha generado el escalar media_ingreso = 1750
+? scalar desvio_ingreso = 500  # Variabilidad esperada
+Se ha generado el escalar desvio_ingreso = 500
+? series ingresos_sim = normal(media_ingreso, desvio_ingreso)  # Simulación \
+  de ingresos
+Se ha generado la serie ingresos_sim (ID 2)
+# === Cálculo de tamaño muestral con error proporcional ===
+? scalar Z = 1.96    # Nivel de confianza del 95%
+Se ha generado el escalar Z = 1.96
+? scalar media_sim = mean(ingresos_sim)
+Se ha generado el escalar media_sim = 1732.71
+? scalar E = 0.05 * media_sim  # Margen de error dinámico (5% de la media)
+Se ha generado el escalar E = 86.6354
+? scalar sigma_sim = sd(ingresos_sim)  # Desviación estándar real
+Se ha generado el escalar sigma_sim = 500.869
+# Tamaño muestral sin corrección
+? scalar n_simple = (Z^2 * sigma_sim^2) / (E^2)
+Se ha generado el escalar n_simple = 128.401
+# Tamaño muestral con corrección por población finita
+? scalar N_real = 1000  # Población ajustada
+Se ha generado el escalar N_real = 1000
+? scalar n_ajustado = n_simple / (1 + (n_simple / N_real))
+Se ha generado el escalar n_ajustado = 113.79
+# === Cálculo de intervalos de confianza ===
+? scalar n = floor(n_ajustado)  # Tamaño muestral final ajustado
+Se ha generado el escalar n = 113
+? scalar x = mean(ingresos_sim)  # Media de la muestra generada
+Se ha generado el escalar x = 1732.71
+? scalar s = sd(ingresos_sim)  # Desviación estándar de la muestra
+Se ha generado el escalar s = 500.869
+# --- Intervalo SIN corrección por población finita ---
+? scalar E_sin = Z * (s / sqrt(n))
+Se ha generado el escalar E_sin = 92.3508
+? scalar inf_sin = x - E_sin
+Se ha generado el escalar inf_sin = 1640.36
+? scalar sup_sin = x + E_sin
+Se ha generado el escalar sup_sin = 1825.06
+# --- Intervalo CON corrección por población finita ---
+? scalar f = n / N_real
+Se ha generado el escalar f = 0.113
+? scalar E_con = E_sin * sqrt(1 - f)
+Se ha generado el escalar E_con = 86.9766
+? scalar inf_con = x - E_con
+Se ha generado el escalar inf_con = 1645.73
+? scalar sup_con = x + E_con
+Se ha generado el escalar sup_con = 1819.68
+# === Cálculo de límites poblacionales ===
+? scalar inf_pobl_sin = x - E_sin
+Se ha generado el escalar inf_pobl_sin = 1640.36
+? scalar sup_pobl_sin = x + E_sin
+Se ha generado el escalar sup_pobl_sin = 1825.06
+? scalar inf_pobl_con = x - E_con
+Se ha generado el escalar inf_pobl_con = 1645.73
+? scalar sup_pobl_con = x + E_con
+Se ha generado el escalar sup_pobl_con = 1819.68
+# === Prueba de hipótesis para la media ===
+? scalar mu_0 = 1700  # Valor poblacional de referencia
+Se ha generado el escalar mu_0 = 1700
+? scalar Z_obs = (x - mu_0) / (s / sqrt(n))
+Se ha generado el escalar Z_obs = 0.694166
+? scalar Z_critico = Z
+Se ha generado el escalar Z_critico = 1.96
+# === Mostrar resultados ===
+
+📊 Tamaño muestral y error proporcional
+Margen de error dinámico (5% de la media): 86.64
+Tamaño muestral sin corrección: 128.40
+Tamaño muestral con corrección finita: 113.00
+
+➡ Intervalos de confianza:
+Sin corrección: [1640.36, 1825.06]
+Con corrección: [1645.73, 1819.68]
+
+✅ Límites poblacionales estimados:
+Sin corrección: [1640.36, 1825.06]
+Con corrección: [1645.73, 1819.68]
+
+📌 Prueba de hipótesis para la media poblacional
+H0: Media poblacional = 1700.00
+Media muestral: 1732.71
+Estadístico de prueba Z: 0.69
+Valor crítico: ±1.96
+? if abs(Z_obs) > Z_critico
+? else
+
+✅ No hay suficiente evidencia para rechazar H0. La media podría ser 1700.00.
+? endif
+? series X1 = normal(0, 1)  # Ejemplo de regresora
+Se ha generado la serie X1 (ID 3)
+? series X2 = uniform(0, 10)
+Se ha generado la serie X2 (ID 4)
+? series X3 = normal(5, 2)
+Se ha generado la serie X3 (ID 5)
+# Transformar ingresos en categorías discretas para Poisson
+? series ingresos_cat = ceil(ingresos_sim / 500)  # Agrupamos en intervalos de \
+  500
+Se ha generado la serie ingresos_cat (ID 6)
+# Aplicar regresión de Poisson
+? poisson ingresos_cat const X1 X2 X3
+Se alcanzó la convergencia después de 3 iteraciones
+
+Modelo 1: Poisson, usando las observaciones 1-1000
+Variable dependiente: ingresos_cat
+Desviaciones típicas basadas en el Hessiano
+
+             coeficiente    Desv. típica      z       valor p 
+  ------------------------------------------------------------
+  const       1.38525        0.0499481     27.73     2.74e-169 ***
+  X1         −0.00242293     0.0161108     −0.1504   0.8805   
+  X2          0.000741223    0.00557094     0.1331   0.8942   
+  X3         −0.00223160     0.00783428    −0.2849   0.7758   
+
+Media de la vble. dep.  3.967000   D.T. de la vble. dep.   1.055948
+Suma de cuad. residuos  1113.435   D.T. de la regresión    1.057311
+R-cuadrado de McFadden  0.000035   R-cuadrado corregido   -0.002242
+Chi-cuadrado(3)         0.122550   valor p                 0.989000
+Log-verosimilitud      −1756.938   Criterio de Akaike      3521.877
+Criterio de Schwarz     3541.508   Crit. de Hannan-Quinn   3529.338
+
+Contraste de sobredispersión: Chi-cuadrado(1) = 792.224 [0.0000]
+
+# Configuración sin borrar datos
+Se alcanzó la convergencia después de 3 iteraciones
+
+Modelo 2: Poisson, usando las observaciones 1-1000
+Variable dependiente: ingresos_cat
+Desviaciones típicas basadas en el Hessiano
+
+             coeficiente    Desv. típica      z       valor p 
+  ------------------------------------------------------------
+  const       1.38525        0.0499481     27.73     2.74e-169 ***
+  X1         −0.00242293     0.0161108     −0.1504   0.8805   
+  X2          0.000741223    0.00557094     0.1331   0.8942   
+  X3         −0.00223160     0.00783428    −0.2849   0.7758   
+
+Media de la vble. dep.  3.967000   D.T. de la vble. dep.   1.055948
+Suma de cuad. residuos  1113.435   D.T. de la regresión    1.057311
+R-cuadrado de McFadden  0.000035   R-cuadrado corregido   -0.002242
+Chi-cuadrado(3)         0.122550   valor p                 0.989000
+Log-verosimilitud      −1756.938   Criterio de Akaike      3521.877
+Criterio de Schwarz     3541.508   Crit. de Hannan-Quinn   3529.338
+
+Contraste de sobredispersión: Chi-cuadrado(1) = 792.224 [0.0000]
+
+📊 **Estimaciones finales Bayesianas:**
+Variable dependiente: ingresos_cat
+Desviaciones típicas basadas en muestreo Gibbs
+-----------------------------------------------------------
+             Coeficiente   Desv. típica
+-----------------------------------------------------------
+  Const      29647.60097       16161.98995
+  X1         0.75428       15.48316
+  X2         5.46850       15.70703
+  X3         5.27618       14.82146
+-----------------------------------------------------------
+
+📌 **Estadísticas del ajuste Bayesiano:**
+Media de la vble. dep.   3.93800
+D.T. de la vble. dep.    1.01646
+Criterio de Akaike       59318.19983
